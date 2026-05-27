@@ -6,7 +6,7 @@
 const CONFIG = {
   // --- Event Details ---
   eventName:    "The Emergence",
-  eventDate:    "June 14, 2026",
+  eventDate:    "May 30, 2026",
   eventTime:    "1:00 PM",
   eventVenue:   "Marian Center for Peace, Lipa City",
 
@@ -14,19 +14,19 @@ const CONFIG = {
   greetingLine: "Hello, beloved.",
 
   invitationBody: [
-    "There is a stirring within the BLD Lipa Youth Ministry —",
-    "a gathering of those who feel the quiet pull toward something more.",
+    "Something is unfolding in the BLD Lipa Youth Ministry—",
+    "a call for those who feel there is more for them.",
     "We believe you are one of them.",
-    "You are being called not merely to attend,",
-    "but to discern, to lead, and to belong.",
-    "Come and see what God is preparing through you."
+    "You are invited not just to attend,",
+    "but to discover, to lead, and to belong.",
+    "Come and see what God has prepared for you."
   ],
 
   closingCTA: "Step forward. We are waiting for you.",
 
   // --- Polaroid Captions (one per anchor photo, optional) ---
   polaroidCaptions: [
-    "Service. Joy. Community.",
+    "JIMLY",
     "Together",
     "Discernment",
     "Called",
