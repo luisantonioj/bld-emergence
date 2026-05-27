@@ -269,7 +269,7 @@
 
     for (const line of inv.querySelectorAll('.invite-line')) {
       line.classList.add('revealed');
-      await delay(400);
+      await delay(900);
     }
 
     const logo = document.getElementById('logo-wrap');
