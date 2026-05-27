@@ -14,8 +14,8 @@ const CONFIG = {
   greetingLine: "Hello, beloved.",
 
   invitationBody: [
-    "Something is unfolding in the BLD Lipa Youth Ministry—",
-    "a call for those who feel there is more for them.",
+    "Something is unfolding in the BLD Lipa Youth Ministry.",
+    "A call for those who feel there is more for them.",
     "We believe you are one of them.",
     "You are invited not just to attend,",
     "but to discover, to lead, and to belong.",
