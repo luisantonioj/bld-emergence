@@ -4,10 +4,7 @@
    ============================================================ */
 
 (() => {
-  // ── Reduced-motion shortcut ──────────────────────────────────
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // ── Helpers ──────────────────────────────────────────────────
   const delay = ms => new Promise(r => setTimeout(r, ms));
   const rand  = (min, max) => Math.random() * (max - min) + min;
 
@@ -20,16 +17,26 @@
     return a;
   }
 
-  // ── Config guard ─────────────────────────────────────────────
   if (typeof CONFIG === 'undefined' || typeof ANCHOR_PHOTOS === 'undefined') {
     console.error('config.js must be loaded before animation.js');
     return;
   }
 
-  const ambientOpacity = CONFIG.ambientOpacity ?? 0.15;
-  document.documentElement.style.setProperty('--ambient-opacity', ambientOpacity);
+  // ── All photos: anchor + ambient combined ────────────────────
+  const ALL_PHOTOS = [...ANCHOR_PHOTOS, ...AMBIENT_PHOTOS];
 
-  // ── Preload anchor photos before the sequence starts ─────────
+  document.documentElement.style.setProperty('--ambient-opacity', CONFIG.ambientOpacity ?? 0.15);
+
+  // ── 5 slot positions (% of container, card center point) ─────
+  const SLOT_CONFIGS = [
+    { leftPct: 50, topPct: 50, rotMin: -4,  rotMax:  4  },  // center
+    { leftPct: 24, topPct: 24, rotMin: -12, rotMax: -5  },  // top-left
+    { leftPct: 75, topPct: 20, rotMin:  5,  rotMax: 12  },  // top-right
+    { leftPct: 20, topPct: 74, rotMin:  3,  rotMax: 10  },  // bottom-left
+    { leftPct: 77, topPct: 71, rotMin: -10, rotMax: -3  },  // bottom-right
+  ];
+
+  // ── Preload ──────────────────────────────────────────────────
   function preloadImages(photos) {
     return Promise.all(
       photos.map(p => new Promise(res => {
@@ -40,7 +47,7 @@
     );
   }
 
-  // ── Ambient slideshow ─────────────────────────────────────────
+  // ── Ambient background slideshow ─────────────────────────────
   let ambientStarted = false;
 
   function startAmbientSlideshow() {
@@ -56,7 +63,6 @@
       const photo = pool[idx % pool.length];
       idx++;
       if (idx >= pool.length) {
-        // reshuffle after full cycle
         pool.splice(0, pool.length, ...shuffle([...AMBIENT_PHOTOS]));
         idx = 0;
       }
@@ -66,20 +72,12 @@
       slide.style.backgroundImage = `url('public/${photo.file}')`;
       container.appendChild(slide);
 
-      // Lazy-load: only fetch next 2 ahead
       [1, 2].forEach(offset => {
         const ahead = AMBIENT_PHOTOS[(idx + offset) % AMBIENT_PHOTOS.length];
-        if (ahead) {
-          const preImg = new Image();
-          preImg.src = `public/${ahead.file}`;
-        }
+        if (ahead) { const pi = new Image(); pi.src = `public/${ahead.file}`; }
       });
 
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          slide.classList.add('active');
-        });
-      });
+      requestAnimationFrame(() => requestAnimationFrame(() => slide.classList.add('active')));
 
       if (current) {
         const old = current;
@@ -97,13 +95,21 @@
     nextSlide();
   }
 
-  // ── Build DOM ─────────────────────────────────────────────────
+  // ── Build 5 polaroid slots ───────────────────────────────────
   function buildPolaroids() {
     const area = document.getElementById('polaroid-area');
-    ANCHOR_PHOTOS.forEach((photo, i) => {
+    SLOT_CONFIGS.forEach((slot, i) => {
+      const photo = ALL_PHOTOS[i % ALL_PHOTOS.length];
+
       const card = document.createElement('div');
       card.className = 'polaroid';
-      card.dataset.index = i;
+      card.dataset.slotIndex = i;
+      card.style.left = `${slot.leftPct}%`;
+      card.style.top  = `${slot.topPct}%`;
+      card.style.zIndex = i + 1;
+
+      const rot = rand(slot.rotMin, slot.rotMax).toFixed(1);
+      card.style.setProperty('--rot', `${rot}deg`);
 
       const img = document.createElement('img');
       img.src = `public/${photo.file}`;
@@ -119,6 +125,7 @@
     });
   }
 
+  // ── Build invitation text ────────────────────────────────────
   function buildInvitation() {
     const wrap = document.getElementById('invitation');
 
@@ -150,140 +157,139 @@
     wrap.appendChild(cta);
   }
 
-  function buildGrid() {
-    const grid = document.getElementById('photo-grid');
-    ANCHOR_PHOTOS.forEach((photo, i) => {
-      const item = document.createElement('div');
-      item.className = 'grid-item';
+  // ── Replace one polaroid slot with a new photo ───────────────
+  let zCounter = 10;
 
-      const img = document.createElement('img');
-      img.src = `public/${photo.file}`;
-      img.alt = photo.alt;
-      item.appendChild(img);
+  async function replacePolaroid(card, slotCfg, photo) {
+    // Exit: fly up and fade
+    card.classList.remove('settled');
+    card.classList.add('exiting');
+    await delay(360);
 
-      if (CONFIG.polaroidCaptions[i]) {
-        const cap = document.createElement('div');
-        cap.className = 'caption';
-        cap.textContent = CONFIG.polaroidCaptions[i];
-        item.appendChild(cap);
-      }
+    // Swap content while off-screen
+    card.querySelector('img').src = `public/${photo.file}`;
+    card.querySelector('img').alt = photo.alt;
+    card.querySelector('.caption').textContent = '';
+    card.classList.remove('colorized');
 
-      grid.appendChild(item);
-    });
+    // New rotation for variety
+    const newRot = rand(slotCfg.rotMin, slotCfg.rotMax).toFixed(1);
+    card.style.setProperty('--rot', `${newRot}deg`);
+
+    // Snap to "above" position instantly (no transition)
+    card.classList.remove('exiting');
+    card.classList.add('no-transition');
+    void card.offsetWidth;
+    card.classList.remove('no-transition');
+
+    // Bring this card to front
+    card.style.zIndex = ++zCounter;
+
+    // Drop in
+    void card.offsetWidth;
+    card.classList.add('settled');
+
+    // Quick colorize after landing
+    await delay(420);
+    card.classList.add('colorized');
   }
 
-  // ── Reduced-motion: instant full display ─────────────────────
-  function instantReveal() {
-    document.getElementById('polaroid-area').style.display = 'none';
+  // ── Continuous cycling through ALL photos ────────────────────
+  function startCycling(cards) {
+    // Build a shuffled queue of photos starting from photo index 5
+    // so the first cycle shows photos not yet displayed
+    const queue = shuffle([...ALL_PHOTOS.slice(5), ...ALL_PHOTOS.slice(0, 5)]);
+    let queueIdx = 0;
+    let slotIdx  = 0;
 
-    const grid = document.getElementById('photo-grid');
-    grid.classList.add('visible');
-    grid.querySelectorAll('.grid-item').forEach(el => {
-      el.classList.add('visible', 'resting');
-    });
+    function step() {
+      if (queueIdx >= queue.length) {
+        // Reshuffle for the next loop
+        queue.splice(0, queue.length, ...shuffle([...ALL_PHOTOS]));
+        queueIdx = 0;
+      }
+
+      const photo = queue[queueIdx++];
+      const card  = cards[slotIdx];
+      slotIdx = (slotIdx + 1) % 5;
+
+      replacePolaroid(card, SLOT_CONFIGS[card.dataset.slotIndex], photo);
+      setTimeout(step, 1800);
+    }
+
+    setTimeout(step, 1800);
+  }
+
+  // ── Reduced-motion: instant reveal ──────────────────────────
+  function instantReveal() {
+    const cards = document.querySelectorAll('.polaroid');
+    cards.forEach(card => card.classList.add('settled', 'colorized'));
 
     const inv = document.getElementById('invitation');
     inv.classList.add('visible');
     inv.querySelectorAll('.invite-line').forEach(el => el.classList.add('revealed'));
 
-    const logo = document.getElementById('logo-wrap');
-    logo.classList.add('visible');
-
+    document.getElementById('logo-wrap').classList.add('visible');
     startAmbientSlideshow();
   }
 
-  // ── Full animation sequence ───────────────────────────────────
+  // ── Main animation sequence ──────────────────────────────────
   async function runSequence() {
     const cards = Array.from(document.querySelectorAll('.polaroid'));
 
-    // Stage 0 — blank opening (1.5 s)
+    // Stage 0 — blank (1.5s)
     await delay(1500);
 
-    // Stage 1 — first polaroid drop
-    const first = cards[0];
-    const rot0 = rand(-3, 3).toFixed(1);
-    first.style.setProperty('--rot', `${rot0}deg`);
-    first.classList.add('dropped');
-
-    await delay(800);
-    first.classList.add('colorized');
-    await delay(600);
-    first.classList.add('captioned');
-    await delay(700);
-
-    // Stage 2 — cascade (cards 1–4)
-    for (let i = 1; i < cards.length; i++) {
+    // Stage 1-2 — cascade 5 polaroids into their slots
+    for (let i = 0; i < cards.length; i++) {
       const card = cards[i];
-      const rot = rand(-6, 6).toFixed(1);
-      card.style.setProperty('--rot', `${rot}deg`);
-      card.classList.add('dropped');
+      card.classList.add('settled');
 
-      await delay(rand(600, 900));
+      await delay(750);
       card.classList.add('colorized');
-      await delay(400);
-      card.classList.add('captioned');
-      await delay(rand(200, 400));
+      await delay(350);
+      if (i === 0) card.classList.add('captioned');
+      await delay(i === 0 ? 700 : 450);
     }
 
-    // Stage 3 — hold (1.5 s)
+    // Stage 3 — brief hold
     await delay(1500);
 
-    // Stage 4 — transition to grid
-    // Hide polaroid area, show grid
-    const polaroidArea = document.getElementById('polaroid-area');
-    polaroidArea.style.transition = 'opacity 0.8s ease';
-    polaroidArea.style.opacity = '0';
-
-    const grid = document.getElementById('photo-grid');
-    grid.classList.add('visible');
-
-    await delay(800);
-    polaroidArea.style.display = 'none';
-
-    // Stagger grid items in
-    const items = grid.querySelectorAll('.grid-item');
-    for (const item of items) {
-      item.classList.add('visible');
-      await delay(120);
-    }
-
-    await delay(400);
-
-    // Stage 5 — ambient + message reveal
+    // Start ambient slideshow
     startAmbientSlideshow();
+
+    // Start cycling all photos through the 5 slots
+    startCycling(cards);
+
+    // Stage 5 — reveal invitation after a couple of replacements
+    await delay(3200);
 
     const inv = document.getElementById('invitation');
     inv.classList.add('visible');
 
-    const lines = inv.querySelectorAll('.invite-line');
-    for (const line of lines) {
+    for (const line of inv.querySelectorAll('.invite-line')) {
       line.classList.add('revealed');
       await delay(400);
     }
 
-    await delay(300);
-
     const logo = document.getElementById('logo-wrap');
     logo.classList.add('visible');
 
-    // Stage 6 — resting state
+    // Resting: pulse CTA
     await delay(600);
-    items.forEach(el => el.classList.add('resting'));
     inv.querySelector('.cta')?.classList.add('resting');
   }
 
-  // ── Init ──────────────────────────────────────────────────────
+  // ── Init ─────────────────────────────────────────────────────
   async function init() {
     buildPolaroids();
     buildInvitation();
-    buildGrid();
 
     if (reducedMotion) {
       instantReveal();
       return;
     }
 
-    // Preload anchor photos before starting
     await preloadImages(ANCHOR_PHOTOS);
     runSequence();
   }
@@ -294,7 +300,7 @@
     init();
   }
 
-  // ── Service Worker registration ───────────────────────────────
+  // ── Service Worker ────────────────────────────────────────────
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./service-worker.js').catch(() => {});
