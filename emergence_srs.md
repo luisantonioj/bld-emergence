@@ -2,7 +2,7 @@
 
 ## BLD Lipa Youth Ministry — Animated Digital Invitation Web Page
 
-**Document Version:** 1.0
+**Document Version:** 1.2
 **Date:** May 2026
 **Project Codename:** The Emergence — Digital Invitation
 
@@ -23,6 +23,7 @@ Inspired by _The Emergence_ physical newsletter (Sept. 02, 2023), this digital i
 The product is:
 
 - A single HTML page with embedded CSS and JavaScript (or a lightweight React/Next.js build)
+- Packaged as a **Progressive Web App (PWA)** — installable on mobile home screens and fully functional offline after first load
 - Hosted on a static hosting platform (e.g., Vercel, Netlify, or GitHub Pages)
 - Accessible via one shareable URL
 - Non-personalized by default; architected to support future per-recipient personalization
@@ -70,6 +71,7 @@ The page is a standalone front-end artifact. It requires no server-side processi
 - **Devices:** Mobile phones (≥ 360px wide), tablets (768px–1024px), desktops (≥ 1280px)
 - **Connection:** Must perform acceptably on a 4G/LTE connection (Philippines mobile network context)
 - **Hosting:** Static file hosting with HTTPS; no server-side runtime required in v1.0
+- **Offline:** Full page and all anchor photos must be available offline after the first visit; ambient pool images are cached progressively
 
 ### 2.4 Design Constraints
 
@@ -78,6 +80,7 @@ The page is a standalone front-end artifact. It requires no server-side processi
 - Images must be optimized (WebP format preferred, max 150 KB per image)
 - No external fonts requiring a paid license; Google Fonts is acceptable
 - The page must function without a back-end in v1.0
+- A `manifest.json` and `service-worker.js` are required to satisfy PWA installability criteria
 
 ---
 
@@ -161,7 +164,18 @@ The page plays a linear, auto-advancing animation timeline on load. The user doe
 
 #### 3.2.3 Branding
 
-- **FR-30:** The page uses the BLD Lipa Youth Ministry's approved color palette (to be provided by coordinators; default reference: monochromatic with an accent derived from existing materials — e.g., deep charcoal `#2B2B2B`, off-white `#FAFAF8`, and a single warm accent such as `#C8A96E` or equivalent).
+- **FR-30:** The page uses a color palette derived from the BLD Lipa Youth Ministry logo (`bldym-logo.jpg`):
+  | Role | Color | Reference |
+  |------|-------|-----------|
+  | Page background | `#EBF4FA` | Soft sky blue (logo background, lightened) |
+  | Primary headings | `#2A5C3F` | Deep forest green (logo "YOUTH" letterform) |
+  | Body text | `#1E3D2B` | Dark green (readable weight on sky-blue bg) |
+  | Accent / highlights | `#EDD94A` | Warm golden yellow (logo starburst) |
+  | Secondary green | `#4F7942` | Olive green (logo "LIPA" text) |
+  | Surface / card white | `#FFFFFF` | Polaroid card face |
+  | PWA theme color | `#C4DFEF` | Sky blue (used in `manifest.json` `theme_color`) |
+
+  Coordinators may provide an override hex code; the above values are the project default.
 - **FR-31:** Typography must use a pairing of a serif display font (e.g., _Playfair Display_ or _Cormorant Garamond_) and a clean sans-serif (e.g., _Inter_ or _DM Sans_), consistent with the newsletter's editorial aesthetic.
 - **FR-32:** The optional handwritten caption font must be a free script/cursive font (e.g., _Caveat_, _Dancing Script_).
 
@@ -186,7 +200,20 @@ The page plays a linear, auto-advancing animation timeline on load. The user doe
 
 ---
 
-### 3.5 Future Personalization (v2.0 Consideration)
+### 3.5 Progressive Web App (PWA)
+
+- **FR-45:** A `manifest.json` must be linked from `index.html` and must declare at minimum: `name`, `short_name`, `description`, `start_url` (`"."`), `display` (`"standalone"`), `orientation` (`"portrait"`), `background_color` (`#EBF4FA`), `theme_color` (`#C4DFEF`), and an `icons` array with at least 192×192 and 512×512 variants derived from `bldym-logo.jpg`.
+- **FR-46:** A `service-worker.js` must be registered on page load. On install it must precache:
+  - `index.html`, `styles.css`, `animation.js`, `config.js`
+  - All anchor photos listed in `ANCHOR_PHOTOS`
+  - The logo (`bldym-logo.jpg`) and any font files
+- **FR-47:** Ambient pool photos (`AMBIENT_PHOTOS`) must be cached using a **cache-then-network** strategy — served from cache if available, fetched and cached on first request. They are not required in the install precache.
+- **FR-48:** When the device is offline, the page must load and display the full animation sequence and invitation message using cached assets. If an ambient pool photo has not yet been cached, the slideshow simply skips that image rather than showing a broken state.
+- **FR-49:** The PWA install prompt must not be triggered automatically. Users may install via the browser's native "Add to Home Screen" UI.
+
+---
+
+### 3.6 Future Personalization (v2.0 Consideration)
 
 These are not required for v1.0 but the architecture must not preclude them.
 
@@ -217,6 +244,7 @@ These are not required for v1.0 but the architecture must not preclude them.
 
 - **NFR-09:** The page must render correctly on iOS Safari 15+ and Chrome for Android 100+.
 - **NFR-10:** CSS animations must use `will-change` and `transform`/`opacity` properties only, to leverage GPU compositing and avoid layout thrash.
+- **NFR-11b:** The PWA must be installable on Android Chrome 100+ and available via "Add to Home Screen" on iOS Safari 15+. Service workers are not supported on iOS in private browsing; the page must degrade gracefully (normal browser tab, no offline support) in that context.
 
 ### 4.4 Security & Privacy
 
@@ -253,7 +281,17 @@ These are not required for v1.0 but the architecture must not preclude them.
 │  │   /public/penta-*.jpg/.png    │  │
 │  │   (anchor + ambient pool)     │  │
 │  └───────────────────────────────┘  │
+│  ┌───────────┐   ┌───────────────┐  │
+│  │manifest.  │   │service-worker │  │
+│  │  json     │   │    .js        │  │
+│  └───────────┘   └───────────────┘  │
 └─────────────────────────────────────┘
+         │ installs / caches
+         ▼
+  [Browser Cache / CacheStorage]
+   • Precached: index.html, CSS, JS,
+     anchor photos, logo, fonts
+   • Runtime-cached: ambient pool photos
 ```
 
 > **Photo categories in `config.js`:**
@@ -313,6 +351,10 @@ The following fields must be populated by the BLD Lipa Youth Ministry coordinato
 | AC-12 | Event details can be updated in ≤ 5 minutes by editing `config.js` alone                                    |
 | AC-13 | A background photo from the ambient pool fades in behind the message text during Stage 5 and continues cycling in Stage 6 |
 | AC-14 | The ambient slideshow does not reduce message text contrast below WCAG 2.1 AA (4.5:1) at its maximum opacity |
+| AC-15 | After first load, the page opens and plays the full animation sequence while offline (airplane mode) |
+| AC-16 | The page passes Chrome's PWA installability audit (manifest + service worker detected, HTTPS) |
+| AC-17 | "Add to Home Screen" installs the page on Android Chrome and iOS Safari; the installed app opens in standalone mode (no browser chrome) |
+| AC-18 | If an ambient pool photo has not been cached yet and the device is offline, the slideshow skips that image without showing a broken-image state |
 
 ---
 
@@ -322,6 +364,7 @@ The following fields must be populated by the BLD Lipa Youth Ministry coordinato
 | ------- | -------- | ------ | ----------------- |
 | 1.0     | May 2026 | —      | Initial SRS draft |
 | 1.1     | May 2026 | —      | Added anchor/ambient photo pool concept; expanded photo count to up to 40 from `/public/`; added FR-17b (background slideshow), NFR-04b (lazy loading), AC-13–14; updated NFR-03, NFR-15, FR-23/24/26, FR-08, FR-22 |
+| 1.2     | May 2026 | —      | Added PWA support (FR-45–49, NFR-11b, AC-15–18, manifest + service-worker in architecture); updated color palette in FR-30 to match `bldym-logo.jpg` (sky blue bg, forest green, golden yellow accent) |
 
 ---
 
