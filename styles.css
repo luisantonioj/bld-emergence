@@ -1,0 +1,333 @@
+/* ============================================================
+   BLD Lipa Youth Ministry — Emergence Digital Invitation
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=Caveat:wght@400;600&display=swap');
+
+/* --- Design tokens --- */
+:root {
+  --bg:          #EBF4FA;
+  --heading:     #2A5C3F;
+  --body-text:   #1E3D2B;
+  --accent:      #EDD94A;
+  --green-2:     #4F7942;
+  --surface:     #FFFFFF;
+  --theme:       #C4DFEF;
+  --shadow:      rgba(30, 61, 43, 0.18);
+  --font-serif:  'Playfair Display', Georgia, serif;
+  --font-sans:   'DM Sans', system-ui, sans-serif;
+  --font-script: 'Caveat', cursive;
+}
+
+/* --- Reset & base --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--body-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* --- Grain overlay (FR-02) --- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   Ambient background slideshow layer (FR-17b)
+   ============================================================ */
+#ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  filter: blur(4px);
+  transition: opacity 1.5s ease;
+  will-change: opacity;
+}
+
+.ambient-slide.active  { opacity: var(--ambient-opacity, 0.15); }
+.ambient-slide.leaving { opacity: 0; }
+
+/* ============================================================
+   Main stage
+   ============================================================ */
+#stage {
+  position: relative;
+  z-index: 2;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem 4rem;
+}
+
+/* ============================================================
+   Polaroid cards
+   ============================================================ */
+#polaroid-area {
+  position: relative;
+  width: min(90vw, 560px);
+  height: 420px;
+  margin: 4rem auto 2rem;
+  flex-shrink: 0;
+}
+
+.polaroid {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%) translateY(-120px) rotate(0deg);
+  background: var(--surface);
+  padding: 12px 12px 48px;
+  box-shadow: 0 8px 32px var(--shadow);
+  width: 220px;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+  transition:
+    transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity   0.4s ease,
+    filter    1.2s ease;
+}
+
+.polaroid.dropped {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) rotate(var(--rot, 0deg));
+}
+
+.polaroid img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(100%);
+  transition: filter 1.2s ease;
+}
+
+.polaroid.colorized img { filter: grayscale(0%); }
+
+.polaroid .caption {
+  font-family: var(--font-script);
+  font-size: 1rem;
+  color: var(--green-2);
+  text-align: center;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.polaroid.captioned .caption { opacity: 1; }
+
+/* ============================================================
+   Photo grid (Stage 4 / final state)
+   ============================================================ */
+#photo-grid {
+  display: none;
+  gap: 1rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 2.5rem;
+}
+
+#photo-grid.visible { display: grid; }
+
+/* grid columns set by JS after polaroids transition */
+.grid-item {
+  background: var(--surface);
+  padding: 8px 8px 36px;
+  box-shadow: 0 4px 16px var(--shadow);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  will-change: transform, opacity;
+}
+
+.grid-item.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* subtle breathing on grid in resting state */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.012); }
+}
+
+.grid-item.resting { animation: breathe 6s ease-in-out infinite; }
+
+.grid-item img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+}
+
+.grid-item .caption {
+  font-family: var(--font-script);
+  font-size: 0.9rem;
+  color: var(--green-2);
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* ============================================================
+   Invitation message
+   ============================================================ */
+#invitation {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  text-align: center;
+}
+
+#invitation.visible { opacity: 1; }
+
+.invite-line {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  will-change: opacity, transform;
+}
+
+.invite-line.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.greeting {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-style: italic;
+  color: var(--heading);
+  margin-bottom: 1.25rem;
+}
+
+.body-line {
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  color: var(--body-text);
+  margin-bottom: 0.4rem;
+}
+
+.event-details {
+  margin: 1.75rem 0;
+  padding: 1.25rem 1.5rem;
+  border-left: 3px solid var(--accent);
+  background: rgba(255,255,255,0.55);
+  text-align: left;
+  border-radius: 0 8px 8px 0;
+}
+
+.event-details p {
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  color: var(--body-text);
+  margin-bottom: 0.25rem;
+}
+
+.event-details strong {
+  color: var(--heading);
+  font-weight: 600;
+}
+
+.cta {
+  font-family: var(--font-serif);
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
+  font-style: italic;
+  color: var(--heading);
+  margin-top: 1.5rem;
+  position: relative;
+  display: inline-block;
+}
+
+/* pulsing glow on CTA in resting state */
+@keyframes ctaGlow {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50%       { text-shadow: 0 0 18px rgba(237, 217, 74, 0.6); }
+}
+
+.cta.resting { animation: ctaGlow 3.5s ease-in-out infinite; }
+
+/* ============================================================
+   Logo
+   ============================================================ */
+#logo-wrap {
+  margin-top: 2rem;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+#logo-wrap.visible { opacity: 1; }
+
+#logo-wrap img {
+  height: 72px;
+  width: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   Responsive grid columns
+   ============================================================ */
+@media (max-width: 767px) {
+  #photo-grid { grid-template-columns: repeat(2, 1fr); }
+  #polaroid-area { height: 360px; }
+  .polaroid { width: 180px; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  #photo-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  #photo-grid { grid-template-columns: repeat(3, 1fr); }
+  #stage {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 3rem 2rem 4rem;
+  }
+  #polaroid-area { flex: 0 0 auto; }
+  #photo-grid    { flex: 1 1 500px; margin: 0; }
+  #invitation    { flex: 1 1 360px; text-align: left; }
+  .event-details { text-align: left; }
+}
+
+/* ============================================================
+   prefers-reduced-motion (NFR-06 / AC-08)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .polaroid,
+  .polaroid img,
+  .polaroid .caption,
+  .invite-line,
+  .grid-item,
+  #invitation,
+  #logo-wrap,
+  .ambient-slide {
+    transition: none !important;
+    animation: none !important;
+  }
+}

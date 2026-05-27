@@ -1,0 +1,24 @@
+{
+  "name": "The Emergence — BLD Lipa Youth Ministry",
+  "short_name": "The Emergence",
+  "description": "A digital invitation from the BLD Lipa Youth Ministry.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EBF4FA",
+  "theme_color": "#C4DFEF",
+  "icons": [
+    {
+      "src": "public/bldym-logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "public/bldym-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
