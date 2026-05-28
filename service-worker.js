@@ -3,8 +3,8 @@
    Service Worker (FR-46, FR-47, FR-48)
    ============================================================ */
 
-const CACHE_VERSION = 'emergence-v1';
-const RUNTIME_CACHE = 'emergence-runtime-v1';
+const CACHE_VERSION = 'emergence-v2';
+const RUNTIME_CACHE = 'emergence-runtime-v2';
 
 // Assets precached on install (FR-46)
 const PRECACHE_ASSETS = [
