@@ -6,8 +6,8 @@
 const CONFIG = {
   // --- Event Details ---
   eventName:    "The Emergence",
-  eventDate:    "May 30, 2026",
-  eventTime:    "1:00 PM",
+  eventDate:    "May 31, 2026",
+  eventTime:    "10:00AM to 11:00AM",
   eventVenue:   "Marian Center for Peace, Lipa City",
 
   // --- Invitation Copy ---
