@@ -11,18 +11,18 @@ const CONFIG = {
   eventVenue:   "Marian Center for Peace, Lipa City",
 
   // --- Invitation Copy ---
-  greetingLine: "Hello, beloved.",
+  greetingLine: "Hello, beloved youth",
 
   invitationBody: [
-    "Something is unfolding in the BLD Lipa Youth Ministry.",
-    "A call for those who feel there is more for them.",
-    "We believe you are one of them.",
-    "You are invited not just to attend,",
-    "but to discover, to lead, and to belong.",
-    "Come and see what God has prepared for you."
+    "There is a version of this community that does not exist yet.",
+    "With your presence, gifts, genuine actions, and",
+    "the unique way you love people,",
+    "we want to continue building a safe space.",
+    "We cannot do that without you,",
+    "so come and see what God has prepared for you."
   ],
 
-  closingCTA: "Step forward. We are waiting for you.",
+  closingCTA: "See you at the emergence!",
 
   // --- Polaroid Captions (one per anchor photo, optional) ---
   polaroidCaptions: [
